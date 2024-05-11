@@ -1,14 +1,15 @@
 import type { FC } from 'react'
 import React from 'react'
 
-import type { IMainProps } from '@/app/components'
 import Main from '@/app/components'
 
-const App: FC<IMainProps> = ({
+const App: FC = ({
   params,
 }: any) => {
+  console.log('params', params);
+
   return (
-    <Main params={params} />
+    <Main appId={params.app} />
   )
 }
 

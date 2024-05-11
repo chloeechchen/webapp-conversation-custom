@@ -101,11 +101,11 @@ export type ConversationItem = {
 }
 
 export type AppInfo = {
-  title: string
-  description: string
+  description?: string
   default_language: Locale
   copyright?: string
-  privacy_policy?: string
+  privacy_policy?: string,
+  name: string
 }
 
 export enum Resolution {

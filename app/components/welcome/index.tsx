@@ -9,6 +9,7 @@ import type { AppInfo, PromptConfig } from '@/types/app'
 import Toast from '@/app/components/base/toast'
 import Select from '@/app/components/base/select'
 import { DEFAULT_VALUE_MAX_LEN } from '@/config'
+import { IButtonStyleProps } from '../base/button'
 
 // regex to match the {{}} and replace it with a span
 const regex = /\{\{([^}]+)\}\}/g
@@ -23,6 +24,8 @@ export type IWelcomeProps = {
   canEidtInpus: boolean
   savedInputs: Record<string, any>
   onInputsChange: (inputs: Record<string, any>) => void
+  btnStyle: IButtonStyleProps
+  isMobile: boolean
 }
 
 const Welcome: FC<IWelcomeProps> = ({
@@ -35,6 +38,8 @@ const Welcome: FC<IWelcomeProps> = ({
   canEidtInpus,
   savedInputs,
   onInputsChange,
+  btnStyle,
+  isMobile
 }) => {
   const { t } = useTranslation()
   const hasVar = promptConfig.prompt_variables.length > 0
@@ -163,7 +168,7 @@ const Welcome: FC<IWelcomeProps> = ({
               </>
             }
           >
-            <ChatBtn onClick={handleChat} />
+            <ChatBtn onClick={handleChat} btnStyle={btnStyle} />
           </TemplateVarPanel>
         </div>
       )
@@ -176,7 +181,7 @@ const Welcome: FC<IWelcomeProps> = ({
           <AppInfoComp siteInfo={siteInfo} />
         }
       >
-        <ChatBtn onClick={handleChat} />
+        <ChatBtn onClick={handleChat} btnStyle={btnStyle} />
       </TemplateVarPanel>
     )
   }
@@ -193,6 +198,7 @@ const Welcome: FC<IWelcomeProps> = ({
         <ChatBtn
           className='mt-3 mobile:ml-0 tablet:ml-[128px]'
           onClick={handleChat}
+          btnStyle={btnStyle}
         />
       </TemplateVarPanel>
     )
@@ -296,8 +302,8 @@ const Welcome: FC<IWelcomeProps> = ({
   }
 
   return (
-    <div className='relative mobile:min-h-[48px] tablet:min-h-[64px]'>
-      {hasSetInputs && renderHeader()}
+    <div className='relative mobile:min-h-[48px] tablet:min-h-0'>
+      {isMobile && hasSetInputs && renderHeader()}
       <div className='mx-auto pc:w-[794px] max-w-full mobile:w-full px-3.5'>
         {/*  Has't set inputs  */}
         {
@@ -331,10 +337,10 @@ const Welcome: FC<IWelcomeProps> = ({
               </div>
               : <div>
               </div>}
-            <a className='flex items-center pr-3 space-x-3' href="https://dify.ai/" target="_blank">
+            {/* <a className='flex items-center pr-3 space-x-3' href="https://dify.ai/" target="_blank">
               <span className='uppercase'>{t('app.chat.powerBy')}</span>
               <FootLogo />
-            </a>
+            </a> */}
           </div>
         )}
       </div>

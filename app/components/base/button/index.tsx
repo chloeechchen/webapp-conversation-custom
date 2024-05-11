@@ -2,6 +2,11 @@ import type { FC, MouseEventHandler } from 'react'
 import React from 'react'
 import Spinner from '@/app/components/base/spinner'
 
+export type IButtonStyleProps = {
+  color?: string
+  backgroundColor?: string
+}
+
 export type IButtonProps = {
   type?: string
   className?: string
@@ -9,6 +14,7 @@ export type IButtonProps = {
   loading?: boolean
   children: React.ReactNode
   onClick?: MouseEventHandler<HTMLDivElement>
+  styleList?: IButtonStyleProps
 }
 
 const Button: FC<IButtonProps> = ({
@@ -18,6 +24,7 @@ const Button: FC<IButtonProps> = ({
   className,
   onClick,
   loading = false,
+  styleList
 }) => {
   let style = 'cursor-pointer'
   switch (type) {
@@ -33,6 +40,7 @@ const Button: FC<IButtonProps> = ({
     <div
       className={`flex justify-center items-center content-center h-9 leading-5 rounded-lg px-4 py-2 text-base ${style} ${className && className}`}
       onClick={disabled ? undefined : onClick}
+      style={styleList}
     >
       {children}
       {/* Spinner is hidden when loading is false */}

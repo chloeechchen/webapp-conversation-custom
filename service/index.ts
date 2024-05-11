@@ -3,6 +3,7 @@ import { get, post, ssePost } from './base'
 import type { Feedbacktype } from '@/types/app'
 
 export const sendChatMessage = async (
+  appId: string,
   body: Record<string, any>,
   {
     onData,
@@ -33,11 +34,16 @@ export const sendChatMessage = async (
   },
 ) => {
   return ssePost('chat-messages', {
+  // return ssePost(`chat-messages/${appId}`, {
     body: {
       ...body,
       response_mode: 'streaming',
     },
   }, { onData, onCompleted, onThought, onFile, onError, getAbortController, onMessageEnd, onMessageReplace, onNodeStarted, onWorkflowStarted, onWorkflowFinished, onNodeFinished })
+}
+
+export const stopChatMessageResponding = async (appId: string, taskId: string) => {
+  return get(`chat-messages/${taskId}/stop`)
 }
 
 export const fetchConversations = async () => {
@@ -59,4 +65,8 @@ export const updateFeedback = async ({ url, body }: { url: string; body: Feedbac
 
 export const generationConversationName = async (id: string) => {
   return post(`conversations/${id}/name`, { body: { auto_generate: true } })
+}
+
+export const getAppInfo = async (appId: string) => {
+  return get(`app/${appId}`)
 }

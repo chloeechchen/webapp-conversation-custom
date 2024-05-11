@@ -71,6 +71,9 @@
   box-sizing: border-box;
   padding: 0;
   margin: 0;
+
+  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+  scrollbar-width: thin;
 }
 
 html,
@@ -81,6 +84,7 @@ body {
 
 body {
   color: rgb(var(--foreground-rgb));
+  background-color: #f8f8f8;
   /* background: linear-gradient(
       to bottom,
       transparent,

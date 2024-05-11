@@ -12,9 +12,11 @@ import type { ChatItem, VisionFile, VisionSettings } from '@/types/app'
 import { TransferMethod } from '@/types/app'
 import Tooltip from '@/app/components/base/tooltip'
 import Toast from '@/app/components/base/toast'
+import Button from '@/app/components/base/button'
 import ChatImageUploader from '@/app/components/base/image-uploader/chat-image-uploader'
 import ImageList from '@/app/components/base/image-uploader/image-list'
 import { useImageFiles } from '@/app/components/base/image-uploader/hooks'
+import stopIcon from './icons/stop'
 
 export type IChatProps = {
   chatList: ChatItem[]
@@ -30,7 +32,9 @@ export type IChatProps = {
   checkCanSend?: () => boolean
   onSend?: (message: string, files: VisionFile[]) => void
   useCurrentUserAvatar?: boolean
-  isResponsing?: boolean
+  isResponding?: boolean
+  canStopResponding?: boolean
+  abortResponding?: () => void
   controlClearQuery?: number
   visionConfig?: VisionSettings
 }
@@ -43,7 +47,9 @@ const Chat: FC<IChatProps> = ({
   checkCanSend,
   onSend = () => { },
   useCurrentUserAvatar,
-  isResponsing,
+  isResponding,
+  canStopResponding,
+  abortResponding,
   controlClearQuery,
   visionConfig,
 }) => {
@@ -95,7 +101,7 @@ const Chat: FC<IChatProps> = ({
     if (!files.find(item => item.type === TransferMethod.local_file && !item.fileId)) {
       if (files.length)
         onClear()
-      if (!isResponsing)
+      if (!isResponding)
         setQuery('')
     }
   }
@@ -129,7 +135,7 @@ const Chat: FC<IChatProps> = ({
               item={item}
               feedbackDisabled={feedbackDisabled}
               onFeedback={onFeedback}
-              isResponsing={isResponsing && isLast}
+              isResponding={isResponding && isLast}
             />
           }
           return (
@@ -146,6 +152,15 @@ const Chat: FC<IChatProps> = ({
       {
         !isHideSendInput && (
           <div className={cn(!feedbackDisabled && '!left-3.5 !right-3.5', 'absolute z-10 bottom-0 left-0 right-0')}>
+            {/* Thinking is sync and can not be stopped */}
+            {(isResponding && canStopResponding && ((!!chatList[chatList.length - 1]?.content) || (chatList[chatList.length - 1]?.agent_thoughts && chatList[chatList.length - 1].agent_thoughts!.length > 0))) && (
+              <div className='flex justify-center mb-4'>
+                <Button className='flex items-center space-x-1 bg-white' onClick={() => abortResponding?.()}>
+                  {stopIcon}
+                  <span className='text-xs text-gray-500 font-normal'>{t('common.operation.stopResponding')}</span>
+                </Button>
+              </div>
+            )}
             <div className='p-[5.5px] max-h-[150px] bg-white border-[1.5px] border-gray-200 rounded-xl overflow-y-auto'>
               {
                 visionConfig?.enabled && (

@@ -30,7 +30,7 @@ const TemplateVarPanel: FC<ITemplateVarPanelProps> = ({
       </div>
       {/* body */}
       {!isFold && children && (
-        <div className='rounded-b-xl p-6'>
+        <div className='rounded-b-xl p-6 bg-white'>
           {children}
         </div>
       )}

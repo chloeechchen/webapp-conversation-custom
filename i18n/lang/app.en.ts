@@ -6,6 +6,8 @@ const translation = {
   },
   chat: {
     newChat: 'New chat',
+    description: 'Description',
+    topic: 'Topic List',
     newChatDefaultName: 'New conversation',
     openingStatementTitle: 'Opening statement',
     powerBy: 'Powered by',

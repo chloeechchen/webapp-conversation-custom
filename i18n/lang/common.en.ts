@@ -6,6 +6,7 @@ const translation = {
   },
   operation: {
     confirm: 'Confirm',
+    stopResponding: 'Stop responding',
     cancel: 'Cancel',
     clear: 'Clear',
     save: 'Save',

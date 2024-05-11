@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "nodemon server.js",
     "build": "next build",
-    "start": "next start",
+    "start": "NODE_ENV=production nodemon server.js",
     "lint": "next lint",
     "fix": "next lint --fix",
     "eslint-fix": "eslint . --fix",
@@ -70,8 +70,10 @@
     "autoprefixer": "^10.4.14",
     "eslint-plugin-react-hooks": "^4.6.0",
     "lint-staged": "^13.2.2",
+    "nodemon": "^3.1.0",
     "postcss": "^8.4.21",
-    "tailwindcss": "^3.2.7"
+    "tailwindcss": "^3.2.7",
+    "ts-node": "^10.9.2"
   },
   "lint-staged": {
     "**/*.js?(x)": [

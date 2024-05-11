@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 'use client'
 import type { FC } from 'react'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import produce, { setAutoFreeze } from 'immer'
 import { useBoolean, useGetState } from 'ahooks'
@@ -10,7 +10,7 @@ import Toast from '@/app/components/base/toast'
 import Sidebar from '@/app/components/sidebar'
 import ConfigSence from '@/app/components/config-scence'
 import Header from '@/app/components/header'
-import { fetchAppParams, fetchChatList, fetchConversations, generationConversationName, sendChatMessage, updateFeedback } from '@/service'
+import { fetchAppParams, fetchChatList, fetchConversations, generationConversationName, sendChatMessage, updateFeedback, getAppInfo } from '@/service'
 import type { ChatItem, ConversationItem, Feedbacktype, PromptConfig, VisionFile, VisionSettings } from '@/types/app'
 import { Resolution, TransferMethod, WorkflowRunningStatus } from '@/types/app'
 import Chat from '@/app/components/chat'
@@ -19,13 +19,22 @@ import useBreakpoints, { MediaType } from '@/hooks/use-breakpoints'
 import Loading from '@/app/components/base/loading'
 import { replaceVarWithValues, userInputsFormToPromptVariables } from '@/utils/prompt'
 import AppUnavailable from '@/app/components/app-unavailable'
-import { API_KEY, APP_ID, APP_INFO, isShowPrompt, promptTemplate } from '@/config'
+import { API_KEY, DEFAULT_APP_INFO, isShowPrompt, promptTemplate } from '@/config'
+import type { AppInfo } from '@/types/app'
 import type { Annotation as AnnotationType } from '@/types/log'
 import { addFileInfos, sortAgentSorts } from '@/utils/tools'
 
-const Main: FC = () => {
+// const btnStyle = { color: '#d97706', backgroundColor: 'black' }
+const btnStyle = {}
+
+export type IPageProps = {
+  appId: string
+}
+
+const Main: FC<IPageProps> = ({ appId }) => {
   const { t } = useTranslation()
   const media = useBreakpoints()
+  const APP_ID = appId
   const isMobile = media === MediaType.mobile
   const hasSetAppConfig = APP_ID && API_KEY
 
@@ -33,6 +42,7 @@ const Main: FC = () => {
   * app info
   */
   const [appUnavailable, setAppUnavailable] = useState<boolean>(false)
+  const [appInfo, setAppInfo] = useState<AppInfo>(DEFAULT_APP_INFO)
   const [isUnknwonReason, setIsUnknwonReason] = useState<boolean>(false)
   const [promptConfig, setPromptConfig] = useState<PromptConfig | null>(null)
   const [inited, setInited] = useState<boolean>(false)
@@ -46,9 +56,9 @@ const Main: FC = () => {
   })
 
   useEffect(() => {
-    if (APP_INFO?.title)
-      document.title = `${APP_INFO.title} - Powered by Dify`
-  }, [APP_INFO?.title])
+    if (appInfo?.name)
+      document.title = `${appInfo.name}`
+  }, [appInfo?.name])
 
   // onData change thought (the produce obj). https://github.com/immerjs/immer/issues/576
   useEffect(() => {
@@ -121,7 +131,7 @@ const Main: FC = () => {
     }
 
     // update chat list of current conversation
-    if (!isNewConversation && !conversationIdChangeBecauseOfNew && !isResponsing) {
+    if (!isNewConversation && !conversationIdChangeBecauseOfNew && !isResponding) {
       fetchChatList(currConversationId).then((res: any) => {
         const { data } = res
         const newChatList: ChatItem[] = generateNewChatListWithOpenstatement(notSyncToStateIntroduction, notSyncToStateInputs)
@@ -220,6 +230,13 @@ const Main: FC = () => {
     }
     (async () => {
       try {
+        const info = await getAppInfo(APP_ID) as AppInfo
+        if (info) {
+          console.log('info', info);
+
+          setAppInfo({ ...info, default_language: 'zh-Hans' })
+        }
+
         const [conversationData, appParams] = await Promise.all([fetchConversations(), fetchAppParams()])
 
         // handle current conversation id
@@ -229,7 +246,7 @@ const Main: FC = () => {
 
         // fetch new conversation info
         const { user_input_form, opening_statement: introduction, file_upload, system_parameters }: any = appParams
-        setLocaleOnClient(APP_INFO.default_language, true)
+        setLocaleOnClient(appInfo.default_language, true)
         setNewConversationInfo({
           name: t('app.chat.newChatDefaultName'),
           introduction,
@@ -262,7 +279,7 @@ const Main: FC = () => {
     })()
   }, [])
 
-  const [isResponsing, { setTrue: setResponsingTrue, setFalse: setResponsingFalse }] = useBoolean(false)
+  const [isResponding, { setTrue: setRespondingTrue, setFalse: setRespondingFalse }] = useBoolean(false)
   const [abortController, setAbortController] = useState<AbortController | null>(null)
   const { notify } = Toast
   const logError = (message: string) => {
@@ -291,7 +308,7 @@ const Main: FC = () => {
   const [openingSuggestedQuestions, setOpeningSuggestedQuestions] = useState<string[]>([])
   const [messageTaskId, setMessageTaskId] = useState('')
   const [hasStopResponded, setHasStopResponded, getHasStopResponded] = useGetState(false)
-  const [isResponsingConIsCurrCon, setIsResponsingConCurrCon, getIsResponsingConIsCurrCon] = useGetState(true)
+  const [isRespondingConIsCurrCon, setIsRespondingConCurrCon, getIsRespondingConIsCurrCon] = useGetState(true)
   const [userQuery, setUserQuery] = useState('')
 
   const updateCurrentQA = ({
@@ -318,7 +335,7 @@ const Main: FC = () => {
   }
 
   const handleSend = async (message: string, files?: VisionFile[]) => {
-    if (isResponsing) {
+    if (isResponding) {
       notify({ type: 'info', message: t('app.errorMessage.waitForResponse') })
       return
     }
@@ -374,8 +391,10 @@ const Main: FC = () => {
     const prevTempNewConversationId = getCurrConversationId() || '-1'
     let tempNewConversationId = ''
 
-    setResponsingTrue()
-    sendChatMessage(data, {
+    setHasStopResponded(false)
+    setRespondingTrue()
+    setIsRespondingConCurrCon(true)
+    sendChatMessage(APP_ID, data, {
       getAbortController: (abortController) => {
         setAbortController(abortController)
       },
@@ -399,7 +418,7 @@ const Main: FC = () => {
         setMessageTaskId(taskId)
         // has switched to other conversation
         if (prevTempNewConversationId !== getCurrConversationId()) {
-          setIsResponsingConCurrCon(false)
+          setIsRespondingConCurrCon(false)
           return
         }
         updateCurrentQA({
@@ -426,7 +445,7 @@ const Main: FC = () => {
         resetNewConversationInputs()
         setChatNotStarted()
         setCurrConversationId(tempNewConversationId, APP_ID, true)
-        setResponsingFalse()
+        setRespondingFalse()
       },
       onFile(file) {
         const lastThought = responseItem.agent_thoughts?.[responseItem.agent_thoughts?.length - 1]
@@ -465,7 +484,7 @@ const Main: FC = () => {
         }
         // has switched to other conversation
         if (prevTempNewConversationId !== getCurrConversationId()) {
-          setIsResponsingConCurrCon(false)
+          setIsRespondingConCurrCon(false)
           return false
         }
 
@@ -520,7 +539,7 @@ const Main: FC = () => {
         ))
       },
       onError() {
-        setResponsingFalse()
+        setRespondingFalse()
         // role back placeholder answer
         setChatList(produce(getChatList(), (draft) => {
           draft.splice(draft.findIndex(item => item.id === placeholderAnswerId), 1)
@@ -591,35 +610,42 @@ const Main: FC = () => {
   }
 
   const renderSidebar = () => {
-    if (!APP_ID || !APP_INFO || !promptConfig)
+    if (!APP_ID || !appInfo || !promptConfig)
       return null
     return (
       <Sidebar
         list={conversationList}
         onCurrentIdChange={handleConversationIdChange}
         currentId={currConversationId}
-        copyRight={APP_INFO.copyright || APP_INFO.title}
+        copyRight={appInfo.name}
+        btnStyle={btnStyle}
+        description={appInfo.description}
       />
     )
   }
 
+  const handleAbortResponding = useCallback(async () => {
+    await stopChatMessageResponding(appId, messageTaskId)
+    setHasStopResponded(true)
+    setRespondingFalse()
+  }, [appId, messageTaskId])
+
   if (appUnavailable)
     return <AppUnavailable isUnknwonReason={isUnknwonReason} errMessage={!hasSetAppConfig ? 'Please set APP_ID and API_KEY in config/index.tsx' : ''} />
 
-  if (!APP_ID || !APP_INFO || !promptConfig)
+  if (!APP_ID || !appInfo || !promptConfig)
     return <Loading type='app' />
 
   return (
     <div className='bg-gray-100'>
       <Header
-        title={APP_INFO.title}
+        title={appInfo.name}
         isMobile={isMobile}
         onShowSideBar={showSidebar}
         onCreateNewChat={() => handleConversationIdChange('-1')}
       />
-      <div className="flex rounded-t-2xl bg-white overflow-hidden">
-        {/* sidebar */}
-        {!isMobile && renderSidebar()}
+      <div className="flex bg-gray-30 overflow-hidden">
+
         {isMobile && isShowSidebar && (
           <div className='fixed inset-0 z-50'
             style={{ backgroundColor: 'rgba(35, 56, 118, 0.2)' }}
@@ -636,12 +662,14 @@ const Main: FC = () => {
             conversationName={conversationName}
             hasSetInputs={hasSetInputs}
             isPublicVersion={isShowPrompt}
-            siteInfo={APP_INFO}
+            siteInfo={appInfo}
             promptConfig={promptConfig}
             onStartChat={handleStartChat}
             canEidtInpus={canEditInpus}
             savedInputs={currInputs as Record<string, any>}
             onInputsChange={setCurrInputs}
+            btnStyle={btnStyle}
+            isMobile={isMobile}
           ></ConfigSence>
 
           {
@@ -652,7 +680,9 @@ const Main: FC = () => {
                     chatList={chatList}
                     onSend={handleSend}
                     onFeedback={handleFeedback}
-                    isResponsing={isResponsing}
+                    isResponding={isResponding}
+                    canStopResponding={!!messageTaskId && isRespondingConIsCurrCon}
+                    abortResponding={handleAbortResponding}
                     checkCanSend={checkCanSend}
                     visionConfig={visionConfig}
                   />
@@ -660,6 +690,8 @@ const Main: FC = () => {
               </div>)
           }
         </div>
+        {/* sidebar */}
+        {!isMobile && renderSidebar()}
       </div>
     </div>
   )

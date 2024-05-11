@@ -6,6 +6,7 @@ const translation = {
   },
   operation: {
     confirm: '确认',
+    stopResponding: '停止响应',
     cancel: '取消',
     clear: '清空',
     save: '保存',
